@@ -1,100 +1,30 @@
 package api
 
 import (
-	"context" // для Redis
+	"context"
 	"loading_time/internal/app/ds"
 	"loading_time/internal/app/repository"
 	"net/http"
-	"strconv" // для Logout
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4" // для JWT parsing в Logout
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type UserHandler struct {
 	Repository *repository.Repository
 }
 
-// @Summary Get user profile
-// @Description Get profile fields for logged-in user
-// @Tags users
-// @Produce json
-// @Success 200 {object} gin.H
-// @Failure 404 {object} gin.H
-// @Router /api/users/profile [get]
-func (h *UserHandler) GetUserProfileAPI(c *gin.Context) {
-	const fixedUserID = 1
-
-	var user ds.User
-
-	db := h.Repository.DB()
-
-	err := db.First(&user, fixedUserID).Error
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"description": "User not found",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-		"data":   user,
-	})
-}
-
-// @Summary Update user profile
-// @Description Update profile fields
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param updates body object {fio=string,contacts=string,cargo_weight=number,containers_20ft_count=integer,containers_40ft_count=integer} true "Updates"
-// @Success 200 {object} gin.H
-// @Failure 400 {object} gin.H
-// @Failure 500 {object} gin.H
-// @Router /api/users/profile [put]
-func (h *UserHandler) UpdateUserProfileAPI(c *gin.Context) {
-	const fixedUserID = 1
-
-	var updates struct {
-		FIO                 string  `json:"fio"`
-		Contacts            string  `json:"contacts"`
-		CargoWeight         float64 `json:"cargo_weight"`
-		Containers20ftCount int     `json:"containers_20ft_count"`
-		Containers40ftCount int     `json:"containers_40ft_count"`
-	}
-
-	if err := c.BindJSON(&updates); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	db := h.Repository.DB()
-	err := db.Model(&ds.User{}).Where("user_id = ?", fixedUserID).Updates(updates).Error
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Profile updated successfully",
-	})
-}
-
 // @Summary Register a new user
-// @Description Register a new user with login and password (password hashed automatically)
+// @Description Register a new user with login and password
 // @Tags users
 // @Accept json
 // @Produce json
 // @Param user body ds.User true "User info"
-// @Success 201 {object} gin.H
-// @Failure 400 {object} gin.H
-// @Failure 500 {object} gin.H
+// @Success 201 {object} object "data: registered user"
+// @Failure 400 {object} object "error: message"
+// @Failure 500 {object} object "error: message"
 // @Router /api/users/register [post]
 func (h *UserHandler) RegisterUserAPI(c *gin.Context) {
 	var user ds.User
@@ -104,15 +34,13 @@ func (h *UserHandler) RegisterUserAPI(c *gin.Context) {
 		})
 		return
 	}
-
-	registeredUser, err := h.Repository.RegisterUser(user) // должно работать, если repository/user.go правильный
+	registeredUser, err := h.Repository.RegisterUser(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
-
 	c.JSON(http.StatusCreated, gin.H{
 		"data": registeredUser,
 	})
@@ -123,66 +51,143 @@ func (h *UserHandler) RegisterUserAPI(c *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param credentials body object {login=string,password=string} true "Credentials"
-// @Success 200 {object} gin.H
-// @Failure 400 {object} gin.H
-// @Failure 500 {object} gin.H
+// @Param credentials body object{login=string,password=string} true "Credentials"
+// @Success 200 {object} object "message: string, data: {token: string}"
+// @Failure 400 {object} object "error: message"
+// @Failure 500 {object} object "error: message"
 // @Router /api/users/login [post]
 func (h *UserHandler) LoginUserAPI(c *gin.Context) {
 	var credentials struct {
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
-
 	if err := c.BindJSON(&credentials); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
-
 	user := ds.User{Login: credentials.Login, Password: credentials.Password}
-
-	token, err := h.Repository.LoginUser(user) // должно работать
+	token, err := h.Repository.LoginUser(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
-
-	c.SetCookie("jwt", token, int((time.Hour).Seconds()), "/", "", false, true)
-
+	claims := jwt.MapClaims{}
+	_, _ = jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(h.Repository.JWTKey()), nil
+	})
+	expiresAt := time.Unix(int64(claims["exp"].(float64)), 0)
+	c.SetCookie("jwt", token, int(time.Until(expiresAt).Seconds()), "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful",
-		"data": gin.H{
-			"token": token,
-		},
+		"data":    gin.H{"token": token},
 	})
 }
 
 // @Summary Logout user
-// @Description Logout, delete session and cookie
+// @Description Clear session cookie and remove JWT from Redis
 // @Tags users
 // @Produce json
-// @Success 200 {object} gin.H
+// @Success 200 {object} object "message: string"
+// @Failure 400 {object} object "error: message"
 // @Router /api/users/logout [post]
 func (h *UserHandler) LogoutUserAPI(c *gin.Context) {
 	token, err := c.Cookie("jwt")
-	if err == nil && token != "" {
-		parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-			return []byte("SuperSecretKey"), nil
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "No session cookie found",
 		})
-		if err == nil && parsedToken.Valid {
-			claims := parsedToken.Claims.(jwt.MapClaims)
-			userID := int(claims["user_id"].(float64))
-			idStr := strconv.Itoa(userID)
-			h.Repository.Redis().Del(context.Background(), idStr)
-		}
-		c.SetCookie("jwt", "", -1, "/", "", false, true)
+		return
 	}
-
+	claims := jwt.MapClaims{}
+	parsedToken, _ := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(h.Repository.JWTKey()), nil
+	})
+	if !parsedToken.Valid {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid token",
+		})
+		return
+	}
+	userID := int(claims["user_id"].(float64))
+	idStr := strconv.Itoa(userID)
+	err = h.Repository.Redis().Del(context.Background(), idStr).Err()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.SetCookie("jwt", "", -1, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Logout successful",
 	})
+}
+
+// @Summary Get user profile
+// @Description Get profile of the authenticated user
+// @Tags users
+// @Produce json
+// @Success 200 {object} ds.User
+// @Failure 401 {object} object "error: message"
+// @Failure 500 {object} object "error: message"
+// @Router /api/users/profile [get]
+func (h *UserHandler) GetUserProfileAPI(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	var id int
+	if floatID, ok := userID.(float64); ok {
+		id = int(floatID)
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+	user, err := h.Repository.GetUserByID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+// @Summary Update user profile
+// @Description Update profile of the authenticated user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body ds.User true "User info"
+// @Success 200 {object} object "message: string"
+// @Failure 400 {object} object "error: message"
+// @Failure 401 {object} object "error: message"
+// @Failure 500 {object} object "error: message"
+// @Router /api/users/profile [put]
+func (h *UserHandler) UpdateUserProfileAPI(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	var user ds.User
+	if err := c.BindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// Безопасное преобразование userID из float64 в int
+	if floatID, ok := userID.(float64); ok {
+		user.UserID = int(floatID)
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type"})
+		return
+	}
+	if err := h.Repository.UpdateUser(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Profile updated"})
 }

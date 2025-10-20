@@ -11,6 +11,19 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func (r *Repository) GetUserByID(userID int) (*ds.User, error) {
+	user := &ds.User{}
+	err := r.db.First(user, userID).Error
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *Repository) UpdateUser(user ds.User) error {
+	return r.db.Model(&ds.User{}).Where("user_id = ?", user.UserID).Updates(user).Error
+}
+
 func (r *Repository) GetUserByLogin(login string) (*ds.User, error) {
 	user := &ds.User{}
 	err := r.db.Where("login = ?", login).First(user).Error
