@@ -34,7 +34,6 @@ func NewConfig() (*Config, error) {
 		return nil, err
 	}
 
-	// Чтение .env
 	err = godotenv.Load()
 	if err != nil {
 		logrus.Warn("Error loading .env file, using defaults")

@@ -4,27 +4,24 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-
 	"loading_time/internal/app/config"
 	"loading_time/internal/app/dsn"
 	"loading_time/internal/app/handler"
 	"loading_time/internal/app/pkg"
 	"loading_time/internal/app/repository"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	gin.SetMode(gin.ReleaseMode) // Убрать предупреждения debug
-
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(func(c *gin.Context) {
 		logrus.Infof("Incoming request: %s %s", c.Request.Method, c.Request.URL.Path)
 	})
 
-	// Загрузка HTML-шаблонов
 	router.LoadHTMLGlob("templates/*.html")
 
 	conf, err := config.NewConfig()
@@ -35,7 +32,7 @@ func main() {
 	postgresString := dsn.FromEnv()
 	fmt.Println(postgresString)
 
-	rep, errRep := repository.New(postgresString, conf.RedisHost, conf.RedisPort)
+	rep, errRep := repository.New(postgresString, conf.RedisEndpoint, conf.RedisPassword, conf.JwtKey)
 	if errRep != nil {
 		logrus.Fatalf("error initializing repository: %v", errRep)
 	}
@@ -49,7 +46,6 @@ func main() {
 
 	hand := handler.NewHandler(rep)
 
-	// Middleware для _method
 	router.Use(func(c *gin.Context) {
 		if m := c.PostForm("_method"); m != "" {
 			logrus.Infof("Overriding method to %s for %s", m, c.Request.URL.Path)

@@ -21,6 +21,11 @@ func (r *Repository) GetUserByLogin(login string) (*ds.User, error) {
 }
 
 func (r *Repository) CreateUser(user *ds.User) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.Password = string(hashedPassword)
 	return r.db.Create(user).Error
 }
 
