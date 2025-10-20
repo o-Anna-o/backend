@@ -1,0 +1,52 @@
+<html lang="en">
+<head>
+    <title>Loading time</title>
+    <link rel="stylesheet" href="/styles/index_style.css">
+</head>
+<body>
+
+<div class="header">
+    <a href="/ships"><img class="header-icon" src="/img/home-img.svg" alt="home"></a>
+</div>
+
+<form class="page__search" action="/ships" method="GET">
+    {{if .request_ship_count}}
+            <a href="/request_ship/{{.request_ship_id}}" class="cart-link">  
+                <img class="loading_time-img cart-link-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAn0lEQVR4nO3QMQ4BURSF4ckUEol1qGgobIGFaaxIi0ah0lAohE0QkU9GRvcGY15iIv72nXv+d2+S/BzoYq08a3RelTex8zl7tJ4JxnlwhbTE1imW+eykKNTGCVcM3i1/gH4+e0EvFJiKxywkyH4fi3NIcCepiKKerwnQwDZwhkVMwSYgmEcRlOUveMlfUG/BUTwOIcEoe4hRjmHVS9SHGxku7S0HDKVsAAAAAElFTkSuQmCC" alt="busket">
+                <span class="cart-count">{{.request_ship_count}}</span>
+            </a>
+        {{else}}
+            <span class="cart-link cart-link--disabled">
+                <img class="loading_time-img cart-link-icon--disabled" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAn0lEQVR4nO3QMQ4BURSF4ckUEol1qGgobIGFaaxIi0ah0lAohE0QkU9GRvcGY15iIv72nXv+d2+S/BzoYq08a3RelTex8zl7tJ4JxnlwhbTE1imW+eykKNTGCVcM3i1/gH4+e0EvFJiKxywkyH4fi3NIcCepiKKerwnQwDZwhkVMwSYgmEcRlOUveMlfUG/BUTwOIcEoe4hRjmHVS9SHGxku7S0HDKVsAAAAAElFTkSuQmCC" alt="busket">
+            </span>
+        {{end}}
+    
+    <input class="search-input page__search-input page__search-item" type="text" name="search" placeholder="Поиск контейнеровоза" value="{{.search}}">
+    <button class="btn search-btn page__search-item" type="submit">Найти</button>
+</form>
+
+<ul class="ship-cards">
+    {{range .ships}}
+    <li class="ship-item">
+        <div class="ship-image">
+            <img src="http://localhost:9000/loading-time-img/img/{{.PhotoURL}}" 
+                 alt="{{.Name}}"
+                 onerror="this.style.display='none'">
+        </div>
+        
+        <h2>
+            <a href="/ship/{{.ShipID}}">{{.Name}}</a> 
+        </h2>
+        <div class="ship-item-text">
+            <p><b>Вместимость:</b> {{.Capacity}} TEU</p>
+            <p><b>Краны:</b> {{.Cranes}} одновременно</p>
+        </div>
+
+        <form action="/api/ships/{{.ShipID}}/add-to-ship-bucket" method="POST" style="display: inline;">  
+            <button type="submit" class="btn card-btn">Добавить</button>
+        </form>
+    </li>
+    {{end}}
+</ul>
+</body>
+</html>

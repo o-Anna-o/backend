@@ -1,0 +1,33 @@
+<html lang="en">
+<head>
+    <title>Контейнеровоз {{ .ship.Name }}</title>
+    <link rel="stylesheet" href="/styles/ship_style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <a href="/ships"><img class="header-icon" src="/img/home-img.svg" alt="home"></a>
+        </h1>
+    </div>
+    <div class="ship-card">
+        
+        <h1>{{ .ship.Name }}</h1>  
+        <img class="ship-card__img" src="http://localhost:9000/loading-time-img/img/{{.ship.PhotoURL}}" 
+                alt="{{.ship.Name}}"
+                onerror="this.style.display='none'">
+
+        <div class="ship-card__text">
+            <p><b>Вместимость:</b> {{ .ship.Capacity }} TEU</p>
+            <p><b>Габариты:</b> длина {{ .ship.Length }} м, ширина {{ .ship.Width }} м</p>
+            <p><b>Максимальное число контейнеров на 40 футов: </b>{{ .ship.Containers }} штук</p>
+            <p><b>Максимальное число кранов:</b> {{ .ship.Cranes }} одновременно</p>
+            <p><b>Особенности:</b> {{ .ship.Description }}</p>
+        </div>
+        <div class="ship-card__btns">
+        </div>
+        
+        
+    </div>
+</body>
+    
+</html>
