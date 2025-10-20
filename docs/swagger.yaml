@@ -1,0 +1,162 @@
+definitions:
+  ds.User:
+    properties:
+      cargoWeight:
+        type: number
+      contacts:
+        type: string
+      containers20ftCount:
+        type: integer
+      containers40ftCount:
+        type: integer
+      fio:
+        type: string
+      isModerator:
+        type: boolean
+      login:
+        type: string
+      password:
+        type: string
+      userID:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /api/users/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user, set session cookie and return JWT
+      parameters:
+      - description: Credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          properties:
+            login:
+              type: string
+            password:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: string, data: {token: string}'
+          schema:
+            type: object
+        "400":
+          description: 'error: message'
+          schema:
+            type: object
+        "500":
+          description: 'error: message'
+          schema:
+            type: object
+      summary: Login user
+      tags:
+      - users
+  /api/users/logout:
+    post:
+      description: Clear session cookie and remove JWT from Redis
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: string'
+          schema:
+            type: object
+        "400":
+          description: 'error: message'
+          schema:
+            type: object
+      summary: Logout user
+      tags:
+      - users
+  /api/users/profile:
+    get:
+      description: Get profile of the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ds.User'
+        "401":
+          description: 'error: message'
+          schema:
+            type: object
+        "500":
+          description: 'error: message'
+          schema:
+            type: object
+      summary: Get user profile
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update profile of the authenticated user
+      parameters:
+      - description: User info
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/ds.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: string'
+          schema:
+            type: object
+        "400":
+          description: 'error: message'
+          schema:
+            type: object
+        "401":
+          description: 'error: message'
+          schema:
+            type: object
+        "500":
+          description: 'error: message'
+          schema:
+            type: object
+      summary: Update user profile
+      tags:
+      - users
+  /api/users/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with login and password
+      parameters:
+      - description: User info
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/ds.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'data: registered user'
+          schema:
+            type: object
+        "400":
+          description: 'error: message'
+          schema:
+            type: object
+        "500":
+          description: 'error: message'
+          schema:
+            type: object
+      summary: Register a new user
+      tags:
+      - users
+swagger: "2.0"

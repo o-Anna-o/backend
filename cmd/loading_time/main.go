@@ -13,6 +13,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+
+	_ "loading_time/docs" // Swagger docs
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
@@ -52,6 +57,12 @@ func main() {
 			c.Request.Method = m
 		}
 		c.Next()
+	})
+
+	// Добавляем маршрут для Swagger с логом
+	router.GET("/swagger/*any", func(c *gin.Context) {
+		logrus.Infof("Serving Swagger UI for path: %s", c.Request.URL.Path)
+		ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
 	})
 
 	application := pkg.NewApp(conf, router, hand)
