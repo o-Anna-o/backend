@@ -25,11 +25,11 @@ func NewHandler(rep *repository.Repository) *Handler {
 }
 
 func (h *Handler) SetupRoutes(router *gin.Engine) {
-	router.GET("/ships", h.GetShips)
-	router.GET("/ship/:id", h.GetShip)
-	router.GET("/request_ship", h.CreateOrRedirectRequestShip)
-	router.GET("/request_ship/:id", h.GetRequestShip)
+	//router.GET("/ship/:id", h.GetShip)
+	//router.GET("/request_ship", h.CreateOrRedirectRequestShip)
+	//router.GET("/request_ship/:id", h.GetRequestShip)
 	router.POST("/request_ship/calculate_loading_time/:id", h.CalculateLoadingTime)
+	//router.GET("/ships", h.GetShips)
 
 	// API маршруты
 	apiGroup := router.Group("/api")

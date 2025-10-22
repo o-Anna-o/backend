@@ -1,4 +1,69 @@
 definitions:
+  ds.RequestShip:
+    properties:
+      comment:
+        type: string
+      completionDate:
+        type: string
+      containers20ftCount:
+        type: integer
+      containers40ftCount:
+        type: integer
+      creationDate:
+        type: string
+      loadingTime:
+        type: number
+      requestShipID:
+        type: integer
+      ships:
+        items:
+          $ref: '#/definitions/ds.ShipInRequest'
+        type: array
+      status:
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/ds.User'
+        description: автозаполнение пользователя в заявках
+      userID:
+        type: integer
+    type: object
+  ds.Ship:
+    properties:
+      capacity:
+        type: number
+      containers:
+        type: integer
+      cranes:
+        type: integer
+      description:
+        type: string
+      draft:
+        type: number
+      isActive:
+        type: boolean
+      length:
+        type: number
+      name:
+        type: string
+      photoURL:
+        type: string
+      shipID:
+        type: integer
+      width:
+        type: number
+    type: object
+  ds.ShipInRequest:
+    properties:
+      requestShipID:
+        type: integer
+      ship:
+        $ref: '#/definitions/ds.Ship'
+      shipID:
+        type: integer
+      shipsCount:
+        type: integer
+    type: object
   ds.User:
     properties:
       cargoWeight:
@@ -23,6 +88,513 @@ definitions:
 info:
   contact: {}
 paths:
+  /api/request-ships/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update fields of an existing request
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Request updates
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            comment:
+              type: string
+            containers_20ft_count:
+              type: integer
+            containers_40ft_count:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'status: string, message: string'
+          schema:
+            type: object
+        "400":
+          description: 'error: string'
+          schema:
+            type: object
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Update request fields
+      tags:
+      - request_ships
+  /api/request-ships/{id}/completion:
+    post:
+      description: Allow moderator to complete or reject a formed request
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Action (complete or reject)
+        in: formData
+        name: action
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'status: string, message: string, loading_time: int (if completed)'
+          schema:
+            type: object
+        "400":
+          description: 'description: string'
+          schema:
+            type: object
+        "404":
+          description: 'description: string'
+          schema:
+            type: object
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Complete or reject a request
+      tags:
+      - request_ships
+  /api/request_ship:
+    get:
+      description: Retrieve a list of requests with optional filters
+      parameters:
+      - description: Start date filter
+        in: query
+        name: start_date
+        type: string
+      - description: End date filter
+        in: query
+        name: end_date
+        type: string
+      - description: Status filter
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ds.RequestShip'
+            type: array
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Get list of shipping requests
+      tags:
+      - request_ships
+  /api/request_ship/{id}:
+    delete:
+      description: Remove an entire request from the system
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'status: string, message: string'
+          schema:
+            type: object
+        "400":
+          description: 'message: string'
+          schema:
+            type: object
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Delete a request
+      tags:
+      - request_ships
+    get:
+      description: Retrieve details of a specific request with its ships
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'request_ship_id: int, status: string, creation_date: string,
+            containers_20ft_count: int, containers_40ft_count: int, comment: string,
+            loading_time: int, ships: []object'
+          schema:
+            type: object
+        "400":
+          description: 'error: string'
+          schema:
+            type: object
+        "404":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Get a single request
+      tags:
+      - request_ships
+  /api/request_ship/{id}/formation:
+    put:
+      description: Finalize a draft request by the creator
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'status: string, message: string'
+          schema:
+            type: object
+        "400":
+          description: 'description: string'
+          schema:
+            type: object
+        "404":
+          description: 'description: string'
+          schema:
+            type: object
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Form a request
+      tags:
+      - request_ships
+  /api/request_ship/{id}/ships/{ship_id}:
+    delete:
+      description: Remove a ship from a specific request
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Ship ID
+        in: path
+        name: ship_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'description: string'
+          schema:
+            type: object
+        "400":
+          description: 'status: string, description: string'
+          schema:
+            type: object
+        "500":
+          description: 'status: string, description: string'
+          schema:
+            type: object
+      summary: Delete ship from request
+      tags:
+      - request_ships
+    put:
+      consumes:
+      - application/json
+      description: Update the number of ships in a specific request
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Ship ID
+        in: path
+        name: ship_id
+        required: true
+        type: integer
+      - description: Updated ship count
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            ships_count:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'status: string, message: string'
+          schema:
+            type: object
+        "400":
+          description: 'description: string'
+          schema:
+            type: object
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Update ship count in request
+      tags:
+      - request_ships
+  /api/requests/basket:
+    get:
+      description: Retrieve the count of ships in the user's draft request
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: {request_ship_id: int, ships_count: int}'
+          schema:
+            type: object
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Get request basket
+      tags:
+      - request_ships
+  /api/ships:
+    get:
+      description: Retrieve a list of ships with optional filters
+      parameters:
+      - description: Ship name filter
+        in: query
+        name: name
+        type: string
+      - description: Minimum capacity filter
+        in: query
+        name: capacity
+        type: string
+      - description: Active status filter
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: []ds.Ship, count: int'
+          schema:
+            type: object
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Get list of ships
+      tags:
+      - ships
+    post:
+      consumes:
+      - application/json
+      description: Add a new ship to the system
+      parameters:
+      - description: Ship data
+        in: body
+        name: ship
+        required: true
+        schema:
+          $ref: '#/definitions/ds.Ship'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'data: ds.Ship'
+          schema:
+            type: object
+        "400":
+          description: 'error: string'
+          schema:
+            type: object
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Create a new ship
+      tags:
+      - ships
+  /api/ships/{id}:
+    delete:
+      description: Remove a ship from the system by ID
+      parameters:
+      - description: Ship ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: string'
+          schema:
+            type: object
+        "400":
+          description: 'message: string'
+          schema:
+            type: object
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Delete a ship
+      tags:
+      - ships
+    get:
+      description: Retrieve details of a specific ship by ID
+      parameters:
+      - description: Ship ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: ds.Ship'
+          schema:
+            type: object
+        "400":
+          description: 'error: string'
+          schema:
+            type: object
+        "404":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Get a single ship
+      tags:
+      - ships
+    put:
+      consumes:
+      - application/json
+      description: Update details of an existing ship by ID
+      parameters:
+      - description: Ship ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated ship data
+        in: body
+        name: ship
+        required: true
+        schema:
+          $ref: '#/definitions/ds.Ship'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: ds.Ship'
+          schema:
+            type: object
+        "400":
+          description: 'error: string'
+          schema:
+            type: object
+        "500":
+          description: 'error: string'
+          schema:
+            type: object
+      summary: Update a ship
+      tags:
+      - ships
+  /api/ships/{id}/add-to-ship-bucket:
+    post:
+      description: Add a ship to a user's request draft
+      parameters:
+      - description: Ship ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: string, data: {request_ship_id: int, ship_id: int}'
+          schema:
+            type: object
+        "400":
+          description: 'message: string'
+          schema:
+            type: object
+        "404":
+          description: 'message: string'
+          schema:
+            type: object
+        "500":
+          description: 'status: string, description: string'
+          schema:
+            type: object
+      summary: Add ship to request
+      tags:
+      - ships
+  /api/ships/{id}/image:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an image for a specific ship
+      parameters:
+      - description: Ship ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Image file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Image file (alternative)
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: {ship_id: int, photo_url: string, message: string}'
+          schema:
+            type: object
+        "400":
+          description: 'message: string'
+          schema:
+            type: object
+        "404":
+          description: 'message: string'
+          schema:
+            type: object
+        "500":
+          description: 'message: string'
+          schema:
+            type: object
+      summary: Upload ship image
+      tags:
+      - ships
   /api/users/login:
     post:
       consumes:

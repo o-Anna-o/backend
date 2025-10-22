@@ -47,20 +47,14 @@ func (h *ShipHandler) GetShipsAPI(c *gin.Context) {
 	db := h.Repository.DB()
 	query := db.Model(&ds.Ship{})
 
-	// Фильтр по имени
 	if nameFilter != "" {
 		query = query.Where("name ILIKE ?", "%"+nameFilter+"%")
 	}
-
-	// Фильтр по вместимости
 	if capacityFilter != "" {
-		capacity, err := strconv.ParseFloat(capacityFilter, 64)
-		if err == nil {
+		if capacity, err := strconv.ParseFloat(capacityFilter, 64); err == nil {
 			query = query.Where("capacity >= ?", capacity)
 		}
 	}
-
-	// Фильтр по активности
 	if isActiveFilter != "" {
 		isActive := isActiveFilter == "true"
 		query = query.Where("is_active = ?", isActive)
@@ -68,16 +62,25 @@ func (h *ShipHandler) GetShipsAPI(c *gin.Context) {
 
 	var ships []ds.Ship
 	if err := query.Find(&ships).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data":  ships,
-		"count": len(ships),
-	})
+	// Проверяем тип запроса
+	accept := c.GetHeader("Accept")
+	isJSON := strings.Contains(accept, "application/json")
+
+	if isJSON {
+		c.JSON(http.StatusOK, gin.H{
+			"count": len(ships),
+			"data":  ships,
+		})
+	} else {
+		// HTML-рендер для браузера
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"ships": ships,
+		})
+	}
 }
 
 // GetShipAPI - GET /api/ships/:id - один корабль
@@ -241,21 +244,17 @@ func (h *ShipHandler) DeleteShipAPI(c *gin.Context) {
 // @Failure 404 {object} object "message: string"
 // @Failure 500 {object} object "status: string, description: string"
 // @Router /api/ships/{id}/add-to-ship-bucket [post]
+// AddShipToRequestShipAPI - POST /api/ships/:id/add-to-ship-bucket - добавить корабль в заявку
 func (h *ShipHandler) AddShipToRequestShipAPI(c *gin.Context) {
 	shipID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid ship ID",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid ship ID"})
 		return
 	}
 
-	// Проверяем существование корабля
-	_, err = h.Repository.GetShip(shipID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "Ship not found",
-		})
+	// Проверяем существование корабля, переменную ship не сохраняем, чтобы не было ошибки
+	if _, err := h.Repository.GetShip(shipID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Ship not found"})
 		return
 	}
 
@@ -267,10 +266,7 @@ func (h *ShipHandler) AddShipToRequestShipAPI(c *gin.Context) {
 	err = db.Where("status = ? AND user_id = ?", "черновик", fixedUserID).First(&requestShip).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			requestShip = ds.RequestShip{
-				Status: "черновик",
-				UserID: fixedUserID,
-			}
+			requestShip = ds.RequestShip{Status: "черновик", UserID: fixedUserID}
 			if err := db.Create(&requestShip).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "description": err.Error()})
 				return
@@ -281,11 +277,11 @@ func (h *ShipHandler) AddShipToRequestShipAPI(c *gin.Context) {
 		}
 	}
 
-	// Проверяем, JSON ли это запрос
+	// Определяем, JSON-запрос или обычный браузер
 	isJSON := strings.Contains(c.GetHeader("Content-Type"), "application/json") ||
 		strings.Contains(c.GetHeader("Accept"), "application/json")
 
-	// Проверяем, есть ли уже такой корабль в заявке
+	// Проверяем, есть ли уже корабль в заявке
 	var existingShip ds.ShipInRequest
 	err = db.Where("request_ship_id = ? AND ship_id = ?", requestShip.RequestShipID, shipID).First(&existingShip).Error
 
@@ -296,12 +292,12 @@ func (h *ShipHandler) AddShipToRequestShipAPI(c *gin.Context) {
 			return
 		}
 	} else if err == gorm.ErrRecordNotFound {
-		shipInRequest := ds.ShipInRequest{
+		newShip := ds.ShipInRequest{
 			RequestShipID: requestShip.RequestShipID,
 			ShipID:        shipID,
 			ShipsCount:    1,
 		}
-		if err := db.Create(&shipInRequest).Error; err != nil {
+		if err := db.Create(&newShip).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "description": err.Error()})
 			return
 		}
@@ -310,7 +306,7 @@ func (h *ShipHandler) AddShipToRequestShipAPI(c *gin.Context) {
 		return
 	}
 
-	// Если JSON-запрос — возвращаем JSON, иначе редирект
+	// Возвращаем JSON если запрос API, иначе редирект на страницу
 	if isJSON {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Ship added to request",

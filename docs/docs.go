@@ -15,6 +15,769 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/request-ships/{id}": {
+            "put": {
+                "description": "Update fields of an existing request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "request_ships"
+                ],
+                "summary": "Update request fields",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request updates",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "comment": {
+                                    "type": "string"
+                                },
+                                "containers_20ft_count": {
+                                    "type": "integer"
+                                },
+                                "containers_40ft_count": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "status: string, message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/request-ships/{id}/completion": {
+            "post": {
+                "description": "Allow moderator to complete or reject a formed request",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "request_ships"
+                ],
+                "summary": "Complete or reject a request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Action (complete or reject)",
+                        "name": "action",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "status: string, message: string, loading_time: int (if completed)",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "description: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "description: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/request_ship": {
+            "get": {
+                "description": "Retrieve a list of requests with optional filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "request_ships"
+                ],
+                "summary": "Get list of shipping requests",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date filter",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date filter",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status filter",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ds.RequestShip"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/request_ship/{id}": {
+            "get": {
+                "description": "Retrieve details of a specific request with its ships",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "request_ships"
+                ],
+                "summary": "Get a single request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "request_ship_id: int, status: string, creation_date: string, containers_20ft_count: int, containers_40ft_count: int, comment: string, loading_time: int, ships: []object",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove an entire request from the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "request_ships"
+                ],
+                "summary": "Delete a request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "status: string, message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/request_ship/{id}/formation": {
+            "put": {
+                "description": "Finalize a draft request by the creator",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "request_ships"
+                ],
+                "summary": "Form a request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "status: string, message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "description: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "description: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/request_ship/{id}/ships/{ship_id}": {
+            "put": {
+                "description": "Update the number of ships in a specific request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "request_ships"
+                ],
+                "summary": "Update ship count in request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ship ID",
+                        "name": "ship_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated ship count",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "ships_count": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "status: string, message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "description: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a ship from a specific request",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "request_ships"
+                ],
+                "summary": "Delete ship from request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Ship ID",
+                        "name": "ship_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "description: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "status: string, description: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "status: string, description: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/requests/basket": {
+            "get": {
+                "description": "Retrieve the count of ships in the user's draft request",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "request_ships"
+                ],
+                "summary": "Get request basket",
+                "responses": {
+                    "200": {
+                        "description": "data: {request_ship_id: int, ships_count: int}",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ships": {
+            "get": {
+                "description": "Retrieve a list of ships with optional filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ships"
+                ],
+                "summary": "Get list of ships",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ship name filter",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum capacity filter",
+                        "name": "capacity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Active status filter",
+                        "name": "is_active",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data: []ds.Ship, count: int",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Add a new ship to the system",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ships"
+                ],
+                "summary": "Create a new ship",
+                "parameters": [
+                    {
+                        "description": "Ship data",
+                        "name": "ship",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ds.Ship"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "data: ds.Ship",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ships/{id}": {
+            "get": {
+                "description": "Retrieve details of a specific ship by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ships"
+                ],
+                "summary": "Get a single ship",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Ship ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data: ds.Ship",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update details of an existing ship by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ships"
+                ],
+                "summary": "Update a ship",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Ship ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated ship data",
+                        "name": "ship",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ds.Ship"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data: ds.Ship",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a ship from the system by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ships"
+                ],
+                "summary": "Delete a ship",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Ship ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "error: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ships/{id}/add-to-ship-bucket": {
+            "post": {
+                "description": "Add a ship to a user's request draft",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ships"
+                ],
+                "summary": "Add ship to request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Ship ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: string, data: {request_ship_id: int, ship_id: int}",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "status: string, description: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ships/{id}/image": {
+            "post": {
+                "description": "Upload an image for a specific ship",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ships"
+                ],
+                "summary": "Upload ship image",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Ship ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Image file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Image file (alternative)",
+                        "name": "image",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data: {ship_id: int, photo_url: string, message: string}",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "message: string",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users/login": {
             "post": {
                 "description": "Authenticate user, set session cookie and return JWT",
@@ -225,6 +988,107 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "ds.RequestShip": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "completionDate": {
+                    "type": "string"
+                },
+                "containers20ftCount": {
+                    "type": "integer"
+                },
+                "containers40ftCount": {
+                    "type": "integer"
+                },
+                "creationDate": {
+                    "type": "string"
+                },
+                "loadingTime": {
+                    "type": "number"
+                },
+                "requestShipID": {
+                    "type": "integer"
+                },
+                "ships": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ds.ShipInRequest"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "user": {
+                    "description": "автозаполнение пользователя в заявках",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ds.User"
+                        }
+                    ]
+                },
+                "userID": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ds.Ship": {
+            "type": "object",
+            "properties": {
+                "capacity": {
+                    "type": "number"
+                },
+                "containers": {
+                    "type": "integer"
+                },
+                "cranes": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "draft": {
+                    "type": "number"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "length": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "photoURL": {
+                    "type": "string"
+                },
+                "shipID": {
+                    "type": "integer"
+                },
+                "width": {
+                    "type": "number"
+                }
+            }
+        },
+        "ds.ShipInRequest": {
+            "type": "object",
+            "properties": {
+                "requestShipID": {
+                    "type": "integer"
+                },
+                "ship": {
+                    "$ref": "#/definitions/ds.Ship"
+                },
+                "shipID": {
+                    "type": "integer"
+                },
+                "shipsCount": {
+                    "type": "integer"
+                }
+            }
+        },
         "ds.User": {
             "type": "object",
             "properties": {

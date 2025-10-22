@@ -6,7 +6,7 @@
 <body>
     <header>
         <h1>
-            <a href="/ships"><img class="home-img header-icon" src="/img/home-img.svg" alt="home"></a>
+            <a href="/api/ships/"><img class="home-img header-icon" src="/img/home-img.svg" alt="home"></a>
         </h1>
     </header>
 
@@ -55,7 +55,7 @@
                     </div>
 
                     <div class="ship-card__other">
-                        <form action="/api/request_ship/{{$.request_ship.RequestShipID}}/ships/{{.Ship.ShipID}}" method="POST" class="ship-card__btn-form">
+                        <form action="/api/request_ship/{{$.request_ship.RequestShipID}}/api/ships//{{.Ship.ShipID}}" method="POST" class="ship-card__btn-form">
                             <input type="hidden" name="_method" value="DELETE">
                             <button type="submit" class="ship-card__other-item ship-card__other-btn btn">Удалить</button>
                         </form>
