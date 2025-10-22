@@ -6,12 +6,12 @@
 <body>
 
 <div class="header">
-    <a href="/api/ships"><img class="header-icon" src="/img/home-img.svg" alt="home"></a>
+    <a href="/ships"><img class="header-icon" src="/img/home-img.svg" alt="home"></a>
 </div>
 
-<form class="page__search"action="/api/ships" method="GET">
+<form class="page__search" action="/ships" method="GET">
     {{if .request_ship_count}}
-            <a href="/api/request_ship/{{.request_ship_id}}" class="cart-link">  
+            <a href="/request_ship/{{.request_ship_id}}" class="cart-link">  
                 <img class="loading_time-img cart-link-icon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAn0lEQVR4nO3QMQ4BURSF4ckUEol1qGgobIGFaaxIi0ah0lAohE0QkU9GRvcGY15iIv72nXv+d2+S/BzoYq08a3RelTex8zl7tJ4JxnlwhbTE1imW+eykKNTGCVcM3i1/gH4+e0EvFJiKxywkyH4fi3NIcCepiKKerwnQwDZwhkVMwSYgmEcRlOUveMlfUG/BUTwOIcEoe4hRjmHVS9SHGxku7S0HDKVsAAAAAElFTkSuQmCC" alt="busket">
                 <span class="cart-count">{{.request_ship_count}}</span>
             </a>
@@ -35,7 +35,7 @@
         </div>
         
         <h2>
-            <a href="/api/ships/{{.ShipID}}">{{.Name}}</a> 
+            <a href="/ship/{{.ShipID}}">{{.Name}}</a> 
         </h2>
         <div class="ship-item-text">
             <p><b>Вместимость:</b> {{.Capacity}} TEU</p>
