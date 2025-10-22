@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// @Schema(description="RequestShip model representing a shipping request")
 type RequestShip struct {
 	RequestShipID       int             `gorm:"primaryKey;column:request_ship_id"`
 	Status              string          `gorm:"column:status"`

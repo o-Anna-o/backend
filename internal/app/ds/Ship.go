@@ -1,5 +1,6 @@
 package ds
 
+// @Schema(description="Ship model representing a container ship")
 type Ship struct {
 	ShipID      int     `gorm:"primaryKey;column:ship_id"`
 	Name        string  `gorm:"column:name"`

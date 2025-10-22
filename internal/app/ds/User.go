@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// @Schema(description="User model representing a registered user")
 type User struct {
 	UserID              int     `gorm:"primaryKey;column:user_id"`
 	FIO                 string  `gorm:"column:fio"`

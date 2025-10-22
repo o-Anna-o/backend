@@ -28,6 +28,17 @@ type ShipHandler struct {
 }
 
 // GetShipsAPI - GET /api/ships - список кораблей с фильтрацией
+
+// @Summary Get list of ships
+// @Description Retrieve a list of ships with optional filters
+// @Tags ships
+// @Produce json
+// @Param name query string false "Ship name filter"
+// @Param capacity query string false "Minimum capacity filter"
+// @Param is_active query bool false "Active status filter"
+// @Success 200 {object} object "data: []ds.Ship, count: int"
+// @Failure 500 {object} object "error: string"
+// @Router /api/ships [get]
 func (h *ShipHandler) GetShipsAPI(c *gin.Context) {
 	nameFilter := c.Query("name")
 	capacityFilter := c.Query("capacity")
@@ -70,6 +81,15 @@ func (h *ShipHandler) GetShipsAPI(c *gin.Context) {
 }
 
 // GetShipAPI - GET /api/ships/:id - один корабль
+// @Summary Get a single ship
+// @Description Retrieve details of a specific ship by ID
+// @Tags ships
+// @Produce json
+// @Param id path int true "Ship ID"
+// @Success 200 {object} object "data: ds.Ship"
+// @Failure 400 {object} object "error: string"
+// @Failure 404 {object} object "error: string"
+// @Router /api/ships/{id} [get]
 func (h *ShipHandler) GetShipAPI(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -93,6 +113,16 @@ func (h *ShipHandler) GetShipAPI(c *gin.Context) {
 }
 
 // CreateShipAPI - POST /api/ships - создание корабля
+// @Summary Create a new ship
+// @Description Add a new ship to the system
+// @Tags ships
+// @Accept json
+// @Produce json
+// @Param ship body ds.Ship true "Ship data"
+// @Success 201 {object} object "data: ds.Ship"
+// @Failure 400 {object} object "error: string"
+// @Failure 500 {object} object "error: string"
+// @Router /api/ships [post]
 func (h *ShipHandler) CreateShipAPI(c *gin.Context) {
 	var ship ds.Ship
 	if err := c.BindJSON(&ship); err != nil {
@@ -118,6 +148,17 @@ func (h *ShipHandler) CreateShipAPI(c *gin.Context) {
 }
 
 // UpdateShipAPI - PUT /api/ships/:id - обновление корабля
+// @Summary Update a ship
+// @Description Update details of an existing ship by ID
+// @Tags ships
+// @Accept json
+// @Produce json
+// @Param id path int true "Ship ID"
+// @Param ship body ds.Ship true "Updated ship data"
+// @Success 200 {object} object "data: ds.Ship"
+// @Failure 400 {object} object "error: string"
+// @Failure 500 {object} object "error: string"
+// @Router /api/ships/{id} [put]
 func (h *ShipHandler) UpdateShipAPI(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -157,6 +198,16 @@ func (h *ShipHandler) UpdateShipAPI(c *gin.Context) {
 }
 
 // DeleteShipAPI - DELETE /api/ships/:id - удаление корабля
+
+// @Summary Delete a ship
+// @Description Remove a ship from the system by ID
+// @Tags ships
+// @Produce json
+// @Param id path int true "Ship ID"
+// @Success 200 {object} object "message: string"
+// @Failure 400 {object} object "message: string"
+// @Failure 500 {object} object "error: string"
+// @Router /api/ships/{id} [delete]
 func (h *ShipHandler) DeleteShipAPI(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -179,6 +230,17 @@ func (h *ShipHandler) DeleteShipAPI(c *gin.Context) {
 }
 
 // AddShipToRequestShipAPI - POST /api/ships/:id/add-to-ship-bucket - добавить корабль в заявку
+
+// @Summary Add ship to request
+// @Description Add a ship to a user's request draft
+// @Tags ships
+// @Produce json
+// @Param id path int true "Ship ID"
+// @Success 200 {object} object "message: string, data: {request_ship_id: int, ship_id: int}"
+// @Failure 400 {object} object "message: string"
+// @Failure 404 {object} object "message: string"
+// @Failure 500 {object} object "status: string, description: string"
+// @Router /api/ships/{id}/add-to-ship-bucket [post]
 func (h *ShipHandler) AddShipToRequestShipAPI(c *gin.Context) {
 	shipID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -263,6 +325,19 @@ func (h *ShipHandler) AddShipToRequestShipAPI(c *gin.Context) {
 }
 
 // AddShipImageAPI - POST /api/ships/:id/image - добавление изображения
+// @Summary Upload ship image
+// @Description Upload an image for a specific ship
+// @Tags ships
+// @Accept multipart/form-data
+// @Produce json
+// @Param id path int true "Ship ID"
+// @Param file formData file true "Image file"
+// @Param image formData file true "Image file (alternative)"
+// @Success 200 {object} object "data: {ship_id: int, photo_url: string, message: string}"
+// @Failure 400 {object} object "message: string"
+// @Failure 404 {object} object "message: string"
+// @Failure 500 {object} object "message: string"
+// @Router /api/ships/{id}/image [post]
 func (h *ShipHandler) AddShipImageAPI(c *gin.Context) {
 	shipID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {

@@ -14,7 +14,15 @@ type RequestShipHandler struct {
 	Repository *repository.Repository
 }
 
-// GetRequestsBasketAPI - GET /api/requests/basket - иконка корзины
+// GetRequestShipBasketAPI - GET /api/requests/basket - иконка корзины
+
+// @Summary Get request basket
+// @Description Retrieve the count of ships in the user's draft request
+// @Tags request_ships
+// @Produce json
+// @Success 200 {object} object "data: {request_ship_id: int, ships_count: int}"
+// @Failure 500 {object} object "error: string"
+// @Router /api/requests/basket [get]
 func (h *RequestShipHandler) GetRequestShipBasketAPI(c *gin.Context) {
 	const fixedUserID = 1
 
@@ -39,6 +47,18 @@ func (h *RequestShipHandler) GetRequestShipBasketAPI(c *gin.Context) {
 	})
 }
 
+// GetRequestShipsAPI - GET /api/request_ship - список заявок
+
+// @Summary Get list of shipping requests
+// @Description Retrieve a list of requests with optional filters
+// @Tags request_ships
+// @Produce json
+// @Param start_date query string false "Start date filter"
+// @Param end_date query string false "End date filter"
+// @Param status query string false "Status filter"
+// @Success 200 {object} []ds.RequestShip
+// @Failure 500 {object} object "error: string"
+// @Router /api/request_ship [get]
 func (h *RequestShipHandler) GetRequestShipsAPI(c *gin.Context) {
 	// Получаем фильтры из query-параметров
 	startDate := c.Query("start_date")
@@ -57,6 +77,16 @@ func (h *RequestShipHandler) GetRequestShipsAPI(c *gin.Context) {
 }
 
 // GetRequestShipAPI - GET /api/request_ship/:id - одна заявка с услугами
+
+// @Summary Get a single request
+// @Description Retrieve details of a specific request with its ships
+// @Tags request_ships
+// @Produce json
+// @Param id path int true "Request ID"
+// @Success 200 {object} object "request_ship_id: int, status: string, creation_date: string, containers_20ft_count: int, containers_40ft_count: int, comment: string, loading_time: int, ships: []object"
+// @Failure 400 {object} object "error: string"
+// @Failure 404 {object} object "error: string"
+// @Router /api/request_ship/{id} [get]
 func (h *RequestShipHandler) GetRequestShipAPI(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -100,6 +130,17 @@ func (h *RequestShipHandler) GetRequestShipAPI(c *gin.Context) {
 }
 
 // UpdateRequestShipAPI - PUT /api/request-ships/:id - изменения полей заявки
+// @Summary Update request fields
+// @Description Update fields of an existing request
+// @Tags request_ships
+// @Accept json
+// @Produce json
+// @Param id path int true "Request ID"
+// @Param request body object{containers_20ft_count=int,containers_40ft_count=int,comment=string} true "Request updates"
+// @Success 200 {object} object "status: string, message: string"
+// @Failure 400 {object} object "error: string"
+// @Failure 500 {object} object "error: string"
+// @Router /api/request-ships/{id} [put]
 func (h *RequestShipHandler) UpdateRequestShipAPI(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -147,6 +188,17 @@ func (h *RequestShipHandler) UpdateRequestShipAPI(c *gin.Context) {
 }
 
 // FormRequestShipAPI - PUT /api/request_ship/:id/formation - сформировать создателем + расчёт времени
+
+// @Summary Form a request
+// @Description Finalize a draft request by the creator
+// @Tags request_ships
+// @Produce json
+// @Param id path int true "Request ID"
+// @Success 200 {object} object "status: string, message: string"
+// @Failure 400 {object} object "description: string"
+// @Failure 404 {object} object "description: string"
+// @Failure 500 {object} object "error: string"
+// @Router /api/request_ship/{id}/formation [put]
 func (h *RequestShipHandler) FormRequestShipAPI(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -210,6 +262,18 @@ func (h *RequestShipHandler) FormRequestShipAPI(c *gin.Context) {
 }
 
 // CompleteRequestShipAPI - POST /api/request-ships/:id/completion - завершить/отклонить модератором
+
+// @Summary Complete or reject a request
+// @Description Allow moderator to complete or reject a formed request
+// @Tags request_ships
+// @Produce json
+// @Param id path int true "Request ID"
+// @Param action formData string true "Action (complete or reject)"
+// @Success 200 {object} object "status: string, message: string, loading_time: int (if completed)"
+// @Failure 400 {object} object "description: string"
+// @Failure 404 {object} object "description: string"
+// @Failure 500 {object} object "error: string"
+// @Router /api/request-ships/{id}/completion [post]
 func (h *RequestShipHandler) CompleteRequestShipAPI(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -312,6 +376,17 @@ func (h *RequestShipHandler) CompleteRequestShipAPI(c *gin.Context) {
 }
 
 // DeleteShipFromRequestShipAPI - DELETE /api/request_ship/:id/ships/:ship_id - удаление корабля из заявки
+
+// @Summary Delete ship from request
+// @Description Remove a ship from a specific request
+// @Tags request_ships
+// @Produce json
+// @Param id path int true "Request ID"
+// @Param ship_id path int true "Ship ID"
+// @Success 200 {object} object "description: string"
+// @Failure 400 {object} object "status: string, description: string"
+// @Failure 500 {object} object "status: string, description: string"
+// @Router /api/request_ship/{id}/ships/{ship_id} [delete]
 func (h *RequestShipHandler) DeleteShipFromRequestShipAPI(c *gin.Context) {
 	requestShipIDStr := c.Param("id")
 	shipIDStr := c.Param("ship_id")
@@ -356,6 +431,19 @@ func (h *RequestShipHandler) DeleteShipFromRequestShipAPI(c *gin.Context) {
 }
 
 // UpdateShipInRequestAPI - PUT /api/request_ship/:id/ships/:ship_id - обновление количества кораблей в заявке
+
+// @Summary Update ship count in request
+// @Description Update the number of ships in a specific request
+// @Tags request_ships
+// @Accept json
+// @Produce json
+// @Param id path int true "Request ID"
+// @Param ship_id path int true "Ship ID"
+// @Param request body object{ships_count=int} true "Updated ship count"
+// @Success 200 {object} object "status: string, message: string"
+// @Failure 400 {object} object "description: string"
+// @Failure 500 {object} object "error: string"
+// @Router /api/request_ship/{id}/ships/{ship_id} [put]
 func (h *RequestShipHandler) UpdateShipInRequestAPI(c *gin.Context) {
 	requestShipIDStr := c.Param("id")
 	shipIDStr := c.Param("ship_id")
@@ -422,6 +510,16 @@ func (h *RequestShipHandler) UpdateShipInRequestAPI(c *gin.Context) {
 }
 
 // DeleteRequestShipAPI - DELETE /api/request_ship/:id - удаление всей заявки
+
+// @Summary Delete a request
+// @Description Remove an entire request from the system
+// @Tags request_ships
+// @Produce json
+// @Param id path int true "Request ID"
+// @Success 200 {object} object "status: string, message: string"
+// @Failure 400 {object} object "message: string"
+// @Failure 500 {object} object "error: string"
+// @Router /api/request_ship/{id} [delete]
 func (h *RequestShipHandler) DeleteRequestShipAPI(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
