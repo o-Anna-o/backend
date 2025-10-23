@@ -66,21 +66,10 @@ func (h *ShipHandler) GetShipsAPI(c *gin.Context) {
 		return
 	}
 
-	// Проверяем тип запроса
-	accept := c.GetHeader("Accept")
-	isJSON := strings.Contains(accept, "application/json")
-
-	if isJSON {
-		c.JSON(http.StatusOK, gin.H{
-			"count": len(ships),
-			"data":  ships,
-		})
-	} else {
-		// HTML-рендер для браузера
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"ships": ships,
-		})
-	}
+	c.JSON(http.StatusOK, gin.H{
+		"count": len(ships),
+		"data":  ships,
+	})
 }
 
 // GetShipAPI - GET /api/ships/:id - один корабль
@@ -244,7 +233,6 @@ func (h *ShipHandler) DeleteShipAPI(c *gin.Context) {
 // @Failure 404 {object} object "message: string"
 // @Failure 500 {object} object "status: string, description: string"
 // @Router /api/ships/{id}/add-to-ship-bucket [post]
-// AddShipToRequestShipAPI - POST /api/ships/:id/add-to-ship-bucket - добавить корабль в заявку
 func (h *ShipHandler) AddShipToRequestShipAPI(c *gin.Context) {
 	shipID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -316,7 +304,14 @@ func (h *ShipHandler) AddShipToRequestShipAPI(c *gin.Context) {
 			},
 		})
 	} else {
-		c.Redirect(http.StatusFound, "/request_ship/"+strconv.Itoa(requestShip.RequestShipID))
+		// Заменяем редирект на JSON-ответ с теми же данными
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Ship added to request",
+			"data": gin.H{
+				"request_ship_id": requestShip.RequestShipID,
+				"ship_id":         shipID,
+			},
+		})
 	}
 }
 
