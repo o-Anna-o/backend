@@ -3,12 +3,12 @@ CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     fio VARCHAR(100) NOT NULL,
     login VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(10) NOT NULL,
+    password VARCHAR(100) NOT NULL,
     contacts VARCHAR(100),
     cargo_weight DECIMAL(10,2),
     containers_20ft_count INTEGER DEFAULT 0,
     containers_40ft_count INTEGER DEFAULT 0,
-    is_moderator BOOLEAN DEFAULT FALSE
+    role VARCHAR(20) DEFAULT 'guest'
 );
 
 -- 2. Таблица кораблей (соответствует модели Ship)
@@ -55,9 +55,16 @@ CREATE UNIQUE INDEX one_draft_request_per_user
 ON request_ship (user_id) 
 WHERE status = 'черновик';
 
--- 6. Тестовый пользователь
-INSERT INTO users (fio, login, password, is_moderator) VALUES 
-('Агапова Анна Денисовна', 'login001', 'password', true);
+-- 6. Тестовые пользователи
+INSERT INTO users (fio, login, password, role) VALUES 
+('Агапова Анна Денисовна', 'login001', 'password', 'moderator');
+
+INSERT INTO users (fio, login, contacts, cargo_weight, containers_20ft_count, containers_40ft_count, password, role) VALUES 
+('Зятева Оля', 'newuser123', 'olia@gmail.com', 100.50, 2, 1, 'pass123', 'creator');
+
+INSERT INTO users (fio, login, password, contacts, cargo_weight, containers_20ft_count, containers_40ft_count, role) 
+VALUES 
+('Зятева Наталья', 'newuser124', 'pass123', 'natal@gmail.com', 200.50, 20, 10, 'guest');
 
 -- 7. Все контейнеровозы 
 INSERT INTO ships (name, description, is_active, capacity, length, width, draft, cranes, containers, photo_url) VALUES 
