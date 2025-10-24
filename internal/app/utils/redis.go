@@ -54,3 +54,11 @@ func GetSession(token string) (map[string]string, error) {
 	}
 	return res, nil
 }
+
+// DeleteSession удаляет токен из Redis
+func DeleteSession(token string) error {
+	if RedisClient == nil {
+		return nil
+	}
+	return RedisClient.Del(ctx, token).Err()
+}

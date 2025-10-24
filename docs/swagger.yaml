@@ -598,9 +598,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate user, set session cookie and return JWT
+      description: Аутентификация и выдача JWT
       parameters:
-      - description: Credentials
+      - description: Логин и пароль
         in: body
         name: credentials
         required: true
@@ -615,44 +615,37 @@ paths:
       - application/json
       responses:
         "200":
-          description: 'message: string, data: {token: string, session_id: string}'
+          description: OK
           schema:
-            type: object
-        "400":
-          description: 'error: message'
-          schema:
+            additionalProperties: true
             type: object
         "401":
-          description: 'error: неверный логин или пароль'
+          description: Unauthorized
           schema:
+            additionalProperties:
+              type: string
             type: object
-        "500":
-          description: 'error: message'
-          schema:
-            type: object
-      summary: Login user
+      summary: Вход пользователя
       tags:
       - users
   /api/users/logout:
     post:
-      description: Clear session cookie and remove JWT from Redis
+      description: Удаление JWT и сессии
       produces:
       - application/json
       responses:
         "200":
-          description: 'message: string'
+          description: OK
           schema:
+            additionalProperties:
+              type: string
             type: object
-        "400":
-          description: 'error: message'
-          schema:
-            type: object
-      summary: Logout user
+      summary: Выход пользователя
       tags:
       - users
   /api/users/profile:
     get:
-      description: Get profile of the authenticated user
+      description: Получение данных профиля авторизованного пользователя
       produces:
       - application/json
       responses:
@@ -660,23 +653,23 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/ds.User'
-        "401":
-          description: 'error: message'
+        "404":
+          description: Not Found
           schema:
+            additionalProperties:
+              type: string
             type: object
-        "500":
-          description: 'error: message'
-          schema:
-            type: object
-      summary: Get user profile
+      security:
+      - ApiKeyAuth: []
+      summary: Профиль пользователя
       tags:
       - users
     put:
       consumes:
       - application/json
-      description: Update profile of the authenticated user
+      description: Обновляет данные авторизованного пользователя
       parameters:
-      - description: User info
+      - description: Пользователь
         in: body
         name: user
         required: true
@@ -686,31 +679,41 @@ paths:
       - application/json
       responses:
         "200":
-          description: 'message: string'
+          description: OK
           schema:
+            additionalProperties:
+              type: string
             type: object
         "400":
-          description: 'error: message'
+          description: Bad Request
           schema:
+            additionalProperties:
+              type: string
             type: object
         "401":
-          description: 'error: message'
+          description: Unauthorized
           schema:
+            additionalProperties:
+              type: string
             type: object
         "500":
-          description: 'error: message'
+          description: Internal Server Error
           schema:
+            additionalProperties:
+              type: string
             type: object
-      summary: Update user profile
+      security:
+      - ApiKeyAuth: []
+      summary: Обновление профиля пользователя
       tags:
       - users
   /api/users/register:
     post:
       consumes:
       - application/json
-      description: Register a new user with login and password
+      description: Создаёт нового пользователя
       parameters:
-      - description: User info
+      - description: Пользователь
         in: body
         name: user
         required: true
@@ -720,18 +723,22 @@ paths:
       - application/json
       responses:
         "201":
-          description: 'data: registered user'
+          description: Created
           schema:
-            type: object
+            $ref: '#/definitions/ds.User'
         "400":
-          description: 'error: message'
+          description: Bad Request
           schema:
+            additionalProperties:
+              type: string
             type: object
         "500":
-          description: 'error: message'
+          description: Internal Server Error
           schema:
+            additionalProperties:
+              type: string
             type: object
-      summary: Register a new user
+      summary: Регистрация пользователя
       tags:
       - users
 swagger: "2.0"

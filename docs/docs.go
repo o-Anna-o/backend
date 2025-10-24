@@ -780,7 +780,7 @@ const docTemplate = `{
         },
         "/api/users/login": {
             "post": {
-                "description": "Authenticate user, set session cookie and return JWT",
+                "description": "Аутентификация и выдача JWT",
                 "consumes": [
                     "application/json"
                 ],
@@ -790,10 +790,10 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Login user",
+                "summary": "Вход пользователя",
                 "parameters": [
                     {
-                        "description": "Credentials",
+                        "description": "Логин и пароль",
                         "name": "credentials",
                         "in": "body",
                         "required": true,
@@ -812,27 +812,19 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "message: string, data: {token: string, session_id: string}",
+                        "description": "OK",
                         "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "400": {
-                        "description": "error: message",
-                        "schema": {
-                            "type": "object"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "401": {
-                        "description": "error: неверный логин или пароль",
+                        "description": "Unauthorized",
                         "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "500": {
-                        "description": "error: message",
-                        "schema": {
-                            "type": "object"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -840,25 +832,22 @@ const docTemplate = `{
         },
         "/api/users/logout": {
             "post": {
-                "description": "Clear session cookie and remove JWT from Redis",
+                "description": "Удаление JWT и сессии",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Logout user",
+                "summary": "Выход пользователя",
                 "responses": {
                     "200": {
-                        "description": "message: string",
+                        "description": "OK",
                         "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "400": {
-                        "description": "error: message",
-                        "schema": {
-                            "type": "object"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -866,14 +855,19 @@ const docTemplate = `{
         },
         "/api/users/profile": {
             "get": {
-                "description": "Get profile of the authenticated user",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Получение данных профиля авторизованного пользователя",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Get user profile",
+                "summary": "Профиль пользователя",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -881,22 +875,24 @@ const docTemplate = `{
                             "$ref": "#/definitions/ds.User"
                         }
                     },
-                    "401": {
-                        "description": "error: message",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "500": {
-                        "description": "error: message",
-                        "schema": {
-                            "type": "object"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
             },
             "put": {
-                "description": "Update profile of the authenticated user",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Обновляет данные авторизованного пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -906,10 +902,10 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Update user profile",
+                "summary": "Обновление профиля пользователя",
                 "parameters": [
                     {
-                        "description": "User info",
+                        "description": "Пользователь",
                         "name": "user",
                         "in": "body",
                         "required": true,
@@ -920,27 +916,39 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "message: string",
+                        "description": "OK",
                         "schema": {
-                            "type": "object"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
-                        "description": "error: message",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "401": {
-                        "description": "error: message",
+                        "description": "Unauthorized",
                         "schema": {
-                            "type": "object"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
-                        "description": "error: message",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -948,7 +956,7 @@ const docTemplate = `{
         },
         "/api/users/register": {
             "post": {
-                "description": "Register a new user with login and password",
+                "description": "Создаёт нового пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -958,10 +966,10 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Register a new user",
+                "summary": "Регистрация пользователя",
                 "parameters": [
                     {
-                        "description": "User info",
+                        "description": "Пользователь",
                         "name": "user",
                         "in": "body",
                         "required": true,
@@ -972,21 +980,27 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "data: registered user",
+                        "description": "Created",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/ds.User"
                         }
                     },
                     "400": {
-                        "description": "error: message",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
-                        "description": "error: message",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "object"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }

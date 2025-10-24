@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware проверяет JWT и допустимые роли (пример как в Lab-4)
+// AuthMiddleware проверяет JWT и допустимые роли
 func AuthMiddleware(allowedRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
