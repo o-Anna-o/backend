@@ -124,9 +124,6 @@ func (h *ShipHandler) CreateShipAPI(c *gin.Context) {
 		return
 	}
 
-	// Устанавливаем значения по умолчанию
-	ship.IsActive = true
-
 	if err := h.Repository.CreateShip(&ship); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

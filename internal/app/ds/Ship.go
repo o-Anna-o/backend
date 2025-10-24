@@ -12,7 +12,6 @@ type Ship struct {
 	Containers  int     `gorm:"column:containers"`
 	Description string  `gorm:"column:description"`
 	PhotoURL    string  `gorm:"column:photo_url"`
-	IsActive    bool    `gorm:"column:is_active"`
 }
 
 func (Ship) TableName() string {

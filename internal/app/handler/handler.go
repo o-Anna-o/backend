@@ -31,39 +31,50 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 	router.GET("/request_ship/:id", h.GetRequestShip)
 	router.POST("/request_ship/calculate_loading_time/:id", h.CalculateLoadingTime)
 	router.GET("/ships", h.GetShips)
+
 	// API маршруты
 	apiGroup := router.Group("/api")
 	{
-		// Домен услуги (контейнеровозы)
+		//  1. ГОСТЬ: Чтение + регистрация/вход
 		apiGroup.GET("/ships", h.ShipAPIHandler.GetShipsAPI)
 		apiGroup.GET("/ships/:id", h.ShipAPIHandler.GetShipAPI)
-		apiGroup.POST("/ships", h.ShipAPIHandler.CreateShipAPI)    // модератор
-		apiGroup.PUT("/ships/:id", h.ShipAPIHandler.UpdateShipAPI) // модератор
-		apiGroup.DELETE("/ships/:id", h.ShipAPIHandler.DeleteShipAPI)
-		apiGroup.POST("/ships/:id/add-to-ship-bucket", h.ShipAPIHandler.AddShipToRequestShipAPI)
-		apiGroup.POST("/ships/:id/image", h.ShipAPIHandler.AddShipImageAPI)
-
-		// Домен заявки
 		apiGroup.GET("/request_ship/basket", h.RequestShipAPIHandler.GetRequestShipBasketAPI)
-		apiGroup.GET("/request_ship", h.RequestShipAPIHandler.GetRequestShipsAPI)
-		apiGroup.GET("/request_ship/:id", h.RequestShipAPIHandler.GetRequestShipAPI)
-		apiGroup.PUT("/request_ship/:id", h.RequestShipAPIHandler.UpdateRequestShipAPI)
-		apiGroup.PUT("/request_ship/:id/formation", h.RequestShipAPIHandler.FormRequestShipAPI)
-		apiGroup.PUT("/request_ship/:id/completion", h.RequestShipAPIHandler.CompleteRequestShipAPI)
-		apiGroup.DELETE("/request_ship/:id", h.RequestShipAPIHandler.DeleteRequestShipAPI)
 
-		// Домен м-м
-		apiGroup.PUT("/request_ship/:id/ships/:ship_id", h.RequestShipAPIHandler.UpdateShipInRequestAPI)
-		apiGroup.DELETE("/request_ship/:id/ships/:ship_id", h.RequestShipAPIHandler.DeleteShipFromRequestShipAPI)
-
-		// Домен пользователя
+		// Регистрация и вход — ГОСТЬ
 		apiGroup.POST("/users/register", h.UserAPIHandler.RegisterUserAPI)
-		authGroup := apiGroup.Group("/", middleware.AuthMiddleware(h.Repository))
+		apiGroup.POST("/users/login", h.UserAPIHandler.LoginUserAPI)
+
+		//  2. АВТОРИЗОВАННЫЕ (creator + moderator)
+		authGroup := apiGroup.Group("", middleware.AuthMiddleware(h.Repository))
 		{
+			// УСЛУГИ
+			authGroup.POST("/ships", h.ShipAPIHandler.CreateShipAPI)
+			authGroup.PUT("/ships/:id", h.ShipAPIHandler.UpdateShipAPI)
+			authGroup.DELETE("/ships/:id", h.ShipAPIHandler.DeleteShipAPI)
+			authGroup.POST("/ships/:id/add-to-ship-bucket", h.ShipAPIHandler.AddShipToRequestShipAPI)
+			authGroup.POST("/ships/:id/image", h.ShipAPIHandler.AddShipImageAPI)
+
+			// ЗАЯВКИ
+			authGroup.GET("/request_ship", h.RequestShipAPIHandler.GetRequestShipsAPI)
+			authGroup.GET("/request_ship/:id", h.RequestShipAPIHandler.GetRequestShipAPI)
+			authGroup.PUT("/request_ship/:id", h.RequestShipAPIHandler.UpdateRequestShipAPI)
+			authGroup.PUT("/request_ship/:id/formation", h.RequestShipAPIHandler.FormRequestShipAPI)
+			authGroup.DELETE("/request_ship/:id", h.RequestShipAPIHandler.DeleteRequestShipAPI)
+
+			// М-М
+			authGroup.PUT("/request_ship/:id/ships/:ship_id", h.RequestShipAPIHandler.UpdateShipInRequestAPI)
+			authGroup.DELETE("/request_ship/:id/ships/:ship_id", h.RequestShipAPIHandler.DeleteShipFromRequestShipAPI)
+
+			// ПРОФИЛЬ
+			authGroup.POST("/users/logout", h.UserAPIHandler.LogoutUserAPI)
 			authGroup.GET("/users/profile", h.UserAPIHandler.GetUserProfileAPI)
 			authGroup.PUT("/users/profile", h.UserAPIHandler.UpdateUserProfileAPI)
-			authGroup.POST("/users/logout", h.UserAPIHandler.LogoutUserAPI)
-			authGroup.POST("/users/login", h.UserAPIHandler.LoginUserAPI)
+		}
+
+		//  3. ТОЛЬКО МОДЕРАТОР
+		modGroup := apiGroup.Group("", middleware.ModeratorMiddleware())
+		{
+			modGroup.PUT("/request_ship/:id/completion", h.RequestShipAPIHandler.CompleteRequestShipAPI)
 		}
 	}
 }

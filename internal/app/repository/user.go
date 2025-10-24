@@ -2,7 +2,10 @@ package repository
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"loading_time/internal/app/ds"
 	"strconv"
 	"time"
@@ -42,14 +45,10 @@ func (r *Repository) CreateUser(user *ds.User) error {
 	return r.db.Create(user).Error
 }
 
-func (r *Repository) ComparePassword(hashedPassword, password string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-}
-
 func (r *Repository) SaveJWTToken(userID int, token string) error {
-	expiration := 1 * time.Hour
+	expiration := 24 * time.Hour // синхронизируем с LoginUser
 	idStr := strconv.Itoa(userID)
-	err := r.Redis().Set(context.Background(), idStr, token, expiration).Err()
+	err := r.Redis().Set(context.Background(), "jwt:"+idStr, token, expiration).Err()
 	if err != nil {
 		return err
 	}
@@ -61,35 +60,72 @@ func (r *Repository) RegisterUser(user ds.User) (ds.User, error) {
 	if err == nil && candidate.Login == user.Login {
 		return ds.User{}, errors.New("такой пользователь уже существует")
 	}
+	user.Role = "creator"
 	err = r.CreateUser(&user)
 	if err != nil {
 		return ds.User{}, err
 	}
-	return user, nil
+
+	createdUser, err := r.GetUserByLogin(user.Login)
+	if err != nil {
+		return ds.User{}, err
+	}
+	return *createdUser, nil
 }
 
-func (r *Repository) LoginUser(user ds.User) (string, error) {
-	candidate, err := r.GetUserByLogin(user.Login)
-	if err != nil {
-		return "", err
+func (r *Repository) LoginUser(login, password string) (jwtToken string, sessionID string, err error) {
+	fmt.Printf("DEBUG: r.db = %v\n", r.db)
+	if r.db == nil {
+		return "", "", fmt.Errorf("db is nil")
 	}
-	err = r.ComparePassword(candidate.Password, user.Password)
+
+	candidate, err := r.GetUserByLogin(login)
 	if err != nil {
-		return "", errors.New("пароли не совпали")
+		return "", "", fmt.Errorf("пользователь не найден: %v", err)
 	}
+
+	// ПРЯМОЕ СРАВНЕНИЕ ХЭША И ПАРОЛЯ
+	if err := bcrypt.CompareHashAndPassword([]byte(candidate.Password), []byte(password)); err != nil {
+		return "", "", fmt.Errorf("неверный пароль")
+	}
+
+	// JWT
 	claims := jwt.MapClaims{
-		"user_id":      candidate.UserID,
-		"is_moderator": candidate.IsModerator,
-		"exp":          time.Now().Add(time.Hour * 1).Unix(),
+		"user_id": candidate.UserID,
+		"role":    candidate.Role,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := token.SignedString([]byte(r.JWTKey()))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	err = r.SaveJWTToken(candidate.UserID, tokenStr)
+
+	if err := r.SaveJWTToken(candidate.UserID, tokenStr); err != nil {
+		return "", "", err
+	}
+
+	// Сессия
+	sid := make([]byte, 16)
+	if _, err := rand.Read(sid); err != nil {
+		return "", "", err
+	}
+	sessionID = hex.EncodeToString(sid)
+	if err := r.SaveSession(sessionID, candidate.UserID, candidate.Role, 24*time.Hour); err != nil {
+		return "", "", err
+	}
+
+	return tokenStr, sessionID, nil
+}
+func (r *Repository) SaveSession(sessionID string, userID int, role string, ttl time.Duration) error {
+	key := "sess:" + sessionID
+	data := map[string]interface{}{
+		"user_id": strconv.Itoa(userID),
+		"role":    role,
+	}
+	err := r.Redis().HMSet(context.Background(), key, data).Err()
 	if err != nil {
-		return "", err
+		return err
 	}
-	return tokenStr, nil
+	return r.Redis().Expire(context.Background(), key, ttl).Err()
 }

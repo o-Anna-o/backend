@@ -116,7 +116,7 @@ services:
           cpus: '3'
           memory: 4G
 
-  # REDIS (добавлено для сессий, как в методичке)
+  # REDIS 
   redis:
     image: redis:7.0
     ports:

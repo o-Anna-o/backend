@@ -823,6 +823,12 @@ const docTemplate = `{
                             "type": "object"
                         }
                     },
+                    "401": {
+                        "description": "error: неверный логин или пароль",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
                     "500": {
                         "description": "error: message",
                         "schema": {
@@ -1052,9 +1058,6 @@ const docTemplate = `{
                 "draft": {
                     "type": "number"
                 },
-                "isActive": {
-                    "type": "boolean"
-                },
                 "length": {
                     "type": "number"
                 },
@@ -1107,13 +1110,14 @@ const docTemplate = `{
                 "fio": {
                     "type": "string"
                 },
-                "isModerator": {
-                    "type": "boolean"
-                },
                 "login": {
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "description": "\"guest\" | \"creator\" | \"moderator\"",
                     "type": "string"
                 },
                 "userID": {

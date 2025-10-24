@@ -40,8 +40,6 @@ definitions:
         type: string
       draft:
         type: number
-      isActive:
-        type: boolean
       length:
         type: number
       name:
@@ -76,11 +74,12 @@ definitions:
         type: integer
       fio:
         type: string
-      isModerator:
-        type: boolean
       login:
         type: string
       password:
+        type: string
+      role:
+        description: '"guest" | "creator" | "moderator"'
         type: string
       userID:
         type: integer
@@ -621,6 +620,10 @@ paths:
             type: object
         "400":
           description: 'error: message'
+          schema:
+            type: object
+        "401":
+          description: 'error: неверный логин или пароль'
           schema:
             type: object
         "500":

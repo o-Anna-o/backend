@@ -2,74 +2,84 @@ package middleware
 
 import (
 	"context"
-	"loading_time/internal/app/repository"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"loading_time/internal/app/ds"
+	"loading_time/internal/app/repository"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// AuthMiddleware - проверка JWT из куки или header, сохранение user_id/is_moderator в контексте
+// AuthMiddleware — проверка JWT из куки или Authorization header, кладет в context "user_id" (int) и "role" (string).
 func AuthMiddleware(rep *repository.Repository) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Проверяем куки
+		// 1. JWT из куки
 		tokenStr, err := c.Cookie("jwt")
-		if err != nil {
-			// Проверяем header
+		if err != nil || tokenStr == "" {
+			// 2. JWT из заголовка Authorization
 			authHeader := c.GetHeader("Authorization")
-			if authHeader == "" {
-				// Guest: продолжаем без user
+			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+				// Гость – только GET
+				if c.Request.Method != "GET" {
+					c.AbortWithStatusJSON(http.StatusUnauthorized,
+						gin.H{"error": "не авторизован"})
+					return
+				}
 				c.Next()
 				return
 			}
-			if strings.HasPrefix(authHeader, "Bearer ") {
-				tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
-			} else {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header"})
-				c.Abort()
+			tokenStr = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+
+		// 3. Парсим JWT
+		claims := &ds.JWTClaims{}
+		token, err := jwt.ParseWithClaims(tokenStr, claims,
+			func(*jwt.Token) (interface{}, error) { return []byte(rep.JWTKey()), nil })
+		if err != nil || !token.Valid {
+			if c.Request.Method != "GET" {
+				c.AbortWithStatusJSON(http.StatusUnauthorized,
+					gin.H{"error": "Invalid token"})
 				return
 			}
-		}
-
-		// Парсим JWT
-		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-			return []byte(rep.JWTKey()), nil
-		})
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			c.Abort()
+			c.Next()
 			return
 		}
 
-		claims := token.Claims.(jwt.MapClaims)
-		userID := int(claims["user_id"].(float64))
-		isModerator := claims["is_moderator"].(bool)
-
-		// Проверяем токен в Redis
-		idStr := strconv.Itoa(userID)
-		storedToken, err := rep.Redis().Get(context.Background(), idStr).Result()
-		if err != nil || storedToken != tokenStr {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token expired or invalid"})
-			c.Abort()
+		// 4. Проверяем, что токен всё ещё в Redis
+		idStr := strconv.Itoa(claims.UserID)
+		stored, err := rep.Redis().Get(context.Background(), idStr).Result()
+		if err != nil || stored != tokenStr {
+			if c.Request.Method != "GET" {
+				c.AbortWithStatusJSON(http.StatusUnauthorized,
+					gin.H{"error": "Token expired"})
+				return
+			}
+			c.Next()
 			return
 		}
 
-		// Сохраняем в контексте
-		c.Set("user_id", userID)
-		c.Set("is_moderator", isModerator)
+		// 5. Сохраняем в контекст
+		c.Set("user_id", claims.UserID)
+		c.Set("role", claims.Role)
 		c.Next()
 	}
 }
 
-// ModeratorMiddleware - проверка на модератора
+// ModeratorMiddleware — требует роль "moderator"
 func ModeratorMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		isModerator, exists := c.Get("is_moderator")
-		if !exists || !isModerator.(bool) {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Moderator access required"})
-			c.Abort()
+		roleAny, exists := c.Get("role")
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusForbidden,
+				gin.H{"error": "Moderator access required"})
+			return
+		}
+		if role, ok := roleAny.(string); !ok || role != "moderator" {
+			c.AbortWithStatusJSON(http.StatusForbidden,
+				gin.H{"error": "Moderator access required"})
 			return
 		}
 		c.Next()

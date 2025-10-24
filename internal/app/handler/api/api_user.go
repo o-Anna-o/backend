@@ -46,6 +46,8 @@ func (h *UserHandler) RegisterUserAPI(c *gin.Context) {
 	})
 }
 
+// LoginUserAPI — обновлён (ожидаем token, sessionID, err)
+
 // @Summary Login user
 // @Description Authenticate user, set session cookie and return JWT
 // @Tags users
@@ -54,6 +56,7 @@ func (h *UserHandler) RegisterUserAPI(c *gin.Context) {
 // @Param credentials body object{login=string,password=string} true "Credentials"
 // @Success 200 {object} object "message: string, data: {token: string}"
 // @Failure 400 {object} object "error: message"
+// @Failure 401 {object} object "error: неверный логин или пароль"
 // @Failure 500 {object} object "error: message"
 // @Router /api/users/login [post]
 func (h *UserHandler) LoginUserAPI(c *gin.Context) {
@@ -62,30 +65,50 @@ func (h *UserHandler) LoginUserAPI(c *gin.Context) {
 		Password string `json:"password"`
 	}
 	if err := c.BindJSON(&credentials); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user := ds.User{Login: credentials.Login, Password: credentials.Password}
-	token, err := h.Repository.LoginUser(user)
+
+	token, sessionID, err := h.Repository.LoginUser(credentials.Login, credentials.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	claims := jwt.MapClaims{}
+	// Получаем exp из токена, чтобы установить ttl куки корректно
+	claims := &jwt.MapClaims{}
 	_, _ = jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(h.Repository.JWTKey()), nil
 	})
-	expiresAt := time.Unix(int64(claims["exp"].(float64)), 0)
+	// безопасно получить exp
+	var expiresAt time.Time
+	if expV, ok := (*claims)["exp"]; ok {
+		switch v := expV.(type) {
+		case float64:
+			expiresAt = time.Unix(int64(v), 0)
+		case int64:
+			expiresAt = time.Unix(v, 0)
+		}
+	} else {
+		// fallback - 1 hour
+		expiresAt = time.Now().Add(time.Hour)
+	}
+
+	// ставим cookie jwt
 	c.SetCookie("jwt", token, int(time.Until(expiresAt).Seconds()), "/", "", false, true)
+
+	// и cookie с session id (если sessionID не пустой)
+	if sessionID != "" {
+		// ставим ту же TTL
+		c.SetCookie("session_id", sessionID, int(time.Until(expiresAt).Seconds()), "/", "", false, true)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful",
-		"data":    gin.H{"token": token},
+		"data":    gin.H{"token": token, "session_id": sessionID},
 	})
 }
+
+// LogoutUserAPI — удаляем jwt (по user_id) и session (по session_id cookie)
 
 // @Summary Logout user
 // @Description Clear session cookie and remove JWT from Redis
@@ -95,36 +118,42 @@ func (h *UserHandler) LoginUserAPI(c *gin.Context) {
 // @Failure 400 {object} object "error: message"
 // @Router /api/users/logout [post]
 func (h *UserHandler) LogoutUserAPI(c *gin.Context) {
-	token, err := c.Cookie("jwt")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "No session cookie found",
+	// пытаемся получить jwt из cookie
+	token, _ := c.Cookie("jwt")
+	// пытаемся получить session_id
+	sessionID, _ := c.Cookie("session_id")
+
+	// если есть jwt — удаляем его связку в Redis (репо использует user_id -> token)
+	if token != "" {
+		claims := jwt.MapClaims{}
+		parsedToken, _ := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+			return []byte(h.Repository.JWTKey()), nil
 		})
-		return
+		if parsedToken != nil && parsedToken.Valid {
+			if uidV, ok := claims["user_id"]; ok {
+				switch v := uidV.(type) {
+				case float64:
+					userID := int(v)
+					idStr := strconv.Itoa(userID)
+					_ = h.Repository.Redis().Del(context.Background(), idStr).Err()
+				case int:
+					idStr := strconv.Itoa(v)
+					_ = h.Repository.Redis().Del(context.Background(), idStr).Err()
+				}
+			}
+		}
 	}
-	claims := jwt.MapClaims{}
-	parsedToken, _ := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(h.Repository.JWTKey()), nil
-	})
-	if !parsedToken.Valid {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid token",
-		})
-		return
+
+	// если есть session_id — удаляем соответствующую запись (репо должна хранить sess:<sessionID>)
+	if sessionID != "" {
+		_ = h.Repository.Redis().Del(context.Background(), "sess:"+sessionID).Err()
 	}
-	userID := int(claims["user_id"].(float64))
-	idStr := strconv.Itoa(userID)
-	err = h.Repository.Redis().Del(context.Background(), idStr).Err()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
+
+	// очистка cookie
 	c.SetCookie("jwt", "", -1, "/", "", false, true)
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Logout successful",
-	})
+	c.SetCookie("session_id", "", -1, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
 }
 
 // @Summary Get user profile
