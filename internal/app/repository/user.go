@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"loading_time/internal/app/ds"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,15 +33,19 @@ func (r *Repository) GetUserByLogin(login string) (*ds.User, error) {
 
 // CreateUser hashes password and saves new user
 func (r *Repository) CreateUser(user *ds.User) error {
-	if user.Password == "" {
-		return fmt.Errorf("password is empty")
+	// Проверка: не пришёл ли уже хеш вместо пароля
+	if len(user.Password) > 0 && strings.HasPrefix(user.Password, "$2a$") {
+		logrus.Infof("CreateUser: пароль уже хеширован, не трогаем login=%s", user.Login)
+	} else {
+		logrus.Infof("CreateUser: raw password='%s' len=%d", user.Password, len(user.Password))
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		user.Password = string(hashedPassword)
+		logrus.Infof("CreateUser: generated hash for login=%s hash=%s len=%d", user.Login, user.Password, len(user.Password))
 	}
-	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("bcrypt generate error: %w", err)
-	}
-	fmt.Printf("DEBUG: CreateUser: generated hash for login=%s hash=%s\n", user.Login, string(hashed))
-	user.Password = string(hashed)
+
 	return r.db.Create(user).Error
 }
 

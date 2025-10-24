@@ -97,14 +97,7 @@ func (h *UserHandler) RegisterUserAPI(c *gin.Context) {
 		user.Role = "creator"
 	}
 
-	// 🔑 Хешируем пароль вручную
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка хеширования пароля"})
-		return
-	}
-	user.Password = string(hashedPassword)
-
+	// Не хешируем здесь пароль — это делает repository.CreateUser
 	if err := h.Repository.CreateUser(&user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
