@@ -45,7 +45,7 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 		apiGroup.POST("/users/login", h.UserAPIHandler.LoginUserAPI)
 
 		//  2. АВТОРИЗОВАННЫЕ (creator + moderator)
-		authGroup := apiGroup.Group("", middleware.AuthMiddleware(h.Repository))
+		authGroup := apiGroup.Group("", middleware.AuthMiddleware())
 		{
 			// УСЛУГИ
 			authGroup.POST("/ships", h.ShipAPIHandler.CreateShipAPI)

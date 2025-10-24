@@ -47,3 +47,20 @@ func AuthMiddleware(allowedRoles ...string) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// ModeratorMiddleware — требует роль "moderator"
+func ModeratorMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		roleAny, exists := c.Get("role")
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Moderator access required"})
+			return
+		}
+		role, ok := roleAny.(string)
+		if !ok || role != "moderator" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Moderator access required"})
+			return
+		}
+		c.Next()
+	}
+}
