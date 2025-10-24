@@ -812,7 +812,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "message: string, data: {token: string}",
+                        "description": "message: string, data: {token: string, session_id: string}",
                         "schema": {
                             "type": "object"
                         }

@@ -9,6 +9,7 @@ import (
 	"loading_time/internal/app/handler"
 	"loading_time/internal/app/pkg"
 	"loading_time/internal/app/repository"
+	"loading_time/internal/app/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,7 @@ import (
 )
 
 func main() {
+	utils.InitRedis()
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(func(c *gin.Context) {
